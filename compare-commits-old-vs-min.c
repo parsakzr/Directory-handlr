@@ -6,7 +6,6 @@
     all the methods are tested manually and work perfectly;
     but when it comes to user input, it has a bug which the
     name parameter remains the same.
-
     Also: added the extra TREE functionality!
         type tree to see the whole subdirectories recursively
 */
@@ -31,8 +30,8 @@ Node* initNode(char* name){
         printf("ALLOC_ERR: Couldn't Create the directory!\n");
         exit(0);
     }
-    
-    node->name = name;
+    node->name = (char*)malloc(MAX_NAME * sizeof(char));
+    strcpy(node->name, name);  // #CHANGED
     node->parent = NULL;
     node->child = NULL;
     node->next = NULL;
@@ -69,7 +68,7 @@ void deleteDir(Node* node, char* name){
 
     Node* current = node->child; // head of the linked list
 
-    if(strcmp(current->name, name) == 0){ // head-deletion
+    if(!strcmp(current->name, name)){ // head-deletion  #CHANGED
         // check if it has child before deletion
         if(current->child != NULL){ // non-recursive deletion #TODO recursive
             printf("DEL_ERR: The directory is not empty\n");
@@ -86,25 +85,25 @@ void deleteDir(Node* node, char* name){
     Node* prev = current; // ATM, current is head
     current = current->next;
 
-    while (current != NULL && current->name != name){
+    while (current != NULL && strcmp(current->name, name)){  // #CHANGED
         prev = current;
         current = current->next;
     }
 
     if (current != NULL){
-        // check if it has child before deletion
-        if(current->child != NULL){ // non-recursive deletion #TODO recursive
-            printf("DEL_ERR: The directory is not empty");
-            return;
-        }
-        // deleting current
-        prev->next = current->next;
-        prev->parent = node;
-        free(current);
+    // check if it has child before deletion
+    if(current->child != NULL){ // non-recursive deletion #TODO recursive
+        printf("DEL_ERR: The directory is not empty");
+        return;
+    }
+    // deleting current
+    prev->next = current->next;
+    prev->parent = node;
+    free(current);
     }
     else
         printf("DEL_ERR: Directory not found!\n");
-    
+
 }
 
 
@@ -115,7 +114,7 @@ Node* getNode(Node* node, char* name){ // search by value between children
 
     Node* temp = node->child;
         for (; temp != NULL; temp=temp->next)
-            if(temp->name == name) // if found
+            if(!strcmp(temp->name, name))  //if found  #CHANGED
                 return temp;
     // not found
     printf("CD_ERR: Directory not found!\n");
@@ -165,13 +164,13 @@ int main(int argc, char** argv){
     Node** currentDir;
     currentDir = &root;
 
-    char *command;
+    char command[MAX_NAME]; // #CHANGED
 
     printf(PROMPT);
     scanf("%s", command);
     //len = getline(&command, &size, stdin);
 
-    while ( strcmp(command, "exit") || strcmp(command, "q")){
+    while (strcmp(command, "exit")){  // #CHANGED
         
         if(!strcmp(command, "mkdir")){
             char name[MAX_NAME];
@@ -208,4 +207,3 @@ int main(int argc, char** argv){
     free(root);
     return 0;
 }
-

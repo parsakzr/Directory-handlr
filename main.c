@@ -2,16 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-/*IMPORTANT NOTE:
-    all the methods are tested manually and work perfectly;
-    but when it comes to user input, it has a bug which the
-    name parameter remains the same.
-
-    Also: added the extra TREE functionality!
-        type tree to see the whole subdirectories recursively
+/*
+    Title: Directory-handlr
+    Tag: Assignment2@DS-AL-AN @YTU
+    Instructor: Doç.Dr. Mehmet Amaç GÜVENSAN
+    Description: A simple directory handling system using Tree
+    
+    @parsa
 */
-
-
 
 #define PROMPT "$ " // shell prompt symbol
 #define MAX_NAME 32
@@ -31,8 +29,8 @@ Node* initNode(char* name){
         printf("ALLOC_ERR: Couldn't Create the directory!\n");
         exit(0);
     }
-    
-    node->name = name;
+    node->name = (char*)malloc(MAX_NAME * sizeof(char));
+    strcpy(node->name, name);
     node->parent = NULL;
     node->child = NULL;
     node->next = NULL;
@@ -47,7 +45,7 @@ void addChild(Node* node, Node* child){
         node->child->parent = node;
     }
 
-    else{ // add the child as a sibiling lf the first child
+    else{ // add the child as a sibiling if the first child
         Node* temp = node->child;
         while (temp->next != NULL) // traverse untill the end
             temp = temp->next;
@@ -58,18 +56,17 @@ void addChild(Node* node, Node* child){
 
 
 void deleteDir(Node* node, char* name){
-
     /*  Since it's always Top-Down, there's no need to control if it's root
         Because there's no way to reach upper than root (chdir handles it)*/
 
     if (node->child == NULL){ // Nothing to delete, empty dir
-        printf("DEL_ERR: Directory not found!\n"); // Same exception
+        printf("DEL_ERR: Directory has no Subdirectory!\n"); // Same exception
         return;
     }
 
     Node* current = node->child; // head of the linked list
 
-    if(strcmp(current->name, name) == 0){ // head-deletion
+    if(!strcmp(current->name, name)){ // head-deletion
         // check if it has child before deletion
         if(current->child != NULL){ // non-recursive deletion #TODO recursive
             printf("DEL_ERR: The directory is not empty\n");
@@ -86,36 +83,37 @@ void deleteDir(Node* node, char* name){
     Node* prev = current; // ATM, current is head
     current = current->next;
 
-    while (current != NULL && current->name != name){
+    while (current != NULL && strcmp(current->name, name)){
         prev = current;
         current = current->next;
     }
 
-    if (current != NULL){
-        // check if it has child before deletion
-        if(current->child != NULL){ // non-recursive deletion #TODO recursive
-            printf("DEL_ERR: The directory is not empty");
-            return;
-        }
-        // deleting current
-        prev->next = current->next;
-        prev->parent = node;
-        free(current);
-    }
-    else
+    if (current == NULL){ // not in the list
         printf("DEL_ERR: Directory not found!\n");
-    
+        return;
+    }
+    // check if it has child before deletion
+    if(current->child != NULL){ // non-recursive deletion #TODO recursive
+        printf("DEL_ERR: The directory is not empty");
+        return;
+    }
+    // deleting current
+    prev->next = current->next;
+    prev->parent = node;
+    free(current);
+
 }
 
 
 Node* getNode(Node* node, char* name){ // search by value between children
 
     if(!strcmp(name, ".."))
-        return node->parent;
+        if(node->parent) // root has a NULL parent
+            return node->parent;
 
     Node* temp = node->child;
         for (; temp != NULL; temp=temp->next)
-            if(temp->name == name) // if found
+            if(!strcmp(temp->name, name)) // if found
                 return temp;
     // not found
     printf("CD_ERR: Directory not found!\n");
@@ -155,49 +153,47 @@ void printTree(Node* node, int level){ // #EXTRA
 }
 
 // ... Utilities ..............................................................
-
-void printPromptDir();
+// void printPromptDir(); #TODO
 
 // ... Main ...................................................................
-int main(int argc, char** argv){
+int main(int argc, char** argvd){
 
     Node* root = initNode("root");
-    Node** currentDir;
-    currentDir = &root;
+    Node* currentDir;
+    currentDir = root;
 
-    char *command;
+    char command[MAX_NAME];
 
     printf(PROMPT);
     scanf("%s", command);
-    //len = getline(&command, &size, stdin);
 
-    while ( strcmp(command, "exit") || strcmp(command, "q")){
+    while ( strcmp(command, "exit")){
         
         if(!strcmp(command, "mkdir")){
             char name[MAX_NAME];
             scanf("%s", name);
             Node* newNode = initNode(name);
-            addChild(*currentDir, newNode);
+            addChild(currentDir, newNode);
         }
         else if (!strcmp(command, "chdir")){            
             char name[MAX_NAME];
             scanf("%s", name);
-            Node* newNode = getNode(*currentDir, name);
-            currentDir = &newNode;
+            Node* newNode = getNode(currentDir, name);
+            currentDir = newNode;
         }
         else if (!strcmp(command, "rmdir")){            
             char name[MAX_NAME];
             scanf("%s", name);
-            deleteDir(*currentDir, name);
+            deleteDir(currentDir, name);
         }
         else if (!strcmp(command, "dir")){
-            printList(*currentDir);
+            printList(currentDir);
         }
         else if (!strcmp(command, "count")){
-            printf("Total directories: %d\n", countList(*currentDir));
+            printf("Total directories: %d\n", countList(currentDir));
         }
         else if (!strcmp(command, "tree")){
-            printTree(*currentDir, 0);
+            printTree(currentDir, 0);
         }
 
         printf(PROMPT);
